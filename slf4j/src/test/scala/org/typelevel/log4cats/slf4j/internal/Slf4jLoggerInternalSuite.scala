@@ -401,7 +401,7 @@ class Slf4jLoggerInternalSuite extends CatsEffectSuite {
   }
 
   testLoggerFixture().test(
-    "Slf4jLoggerInternal gets the dispatching right (msg + context + error"
+    "Slf4jLoggerInternal gets the dispatching right (msg + context + error)"
   ) { testLogger =>
     val slf4jLogger = Slf4jLogger.getLoggerFromSlf4j[IO](testLogger)
     prepareMDC >>
@@ -421,6 +421,28 @@ class Slf4jLoggerInternalSuite extends CatsEffectSuite {
             DeferredLogMessage.error(tag("error"), throwable.some, () => "error")
           )
         ) >>
+      validateMDC
+  }
+
+  testLoggerFixture(
+    traceEnabled = false,
+    debugEnabled = false,
+    infoEnabled = false,
+    warnEnabled = false,
+    errorEnabled = false
+  ).test(
+    "Slf4jLoggerInternal populates the MDC if logging is disabled"
+  ) { testLogger =>
+    val slf4jLogger = Slf4jLogger.getLoggerFromSlf4j[IO](testLogger)
+    prepareMDC >>
+      slf4jLogger.trace(tag("trace"), throwable)("trace").assert >>
+      slf4jLogger.debug(tag("debug"), throwable)("debug").assert >>
+      slf4jLogger.info(tag("info"), throwable)("info").assert >>
+      slf4jLogger.warn(tag("warn"), throwable)("warn").assert >>
+      slf4jLogger.error(tag("error"), throwable)("error").assert >>
+      IO(testLogger.logs())
+        .map(toDeferredLogs)
+        .assertEquals(Nil) >>
       validateMDC
   }
 }
